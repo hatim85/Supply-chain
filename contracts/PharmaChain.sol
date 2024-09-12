@@ -1,8 +1,47 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./TokenRewards.sol";
+
 contract PharmaChain {
+    TokenRewards public tokenContract;
     address public owner;
+
+    constructor(TokenRewards _tokenContract){
+        tokenContract=_tokenContract;
+        owner=msg.sender;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can execute this");
+        _;
+    }
+
+    // Function to reward participants for meeting performance metrics
+    function rewardParticipant(address participant, uint256 amount) public onlyOwner {
+        tokenContract.mint(participant, amount);
+        emit RewardIssued(participant, amount);
+    }
+
+    // Function to penalize participants for breaches
+    function penalizeParticipant(address participant, uint256 amount) public onlyOwner {
+        tokenContract.burn(participant, amount);
+        emit PenaltyIssued(participant, amount);
+    }
+
+    // Example: Reward for on-time delivery
+    function rewardOnTimeDelivery(address participant) public onlyOwner {
+        rewardParticipant(participant, 100); // Issue 100 tokens for on-time delivery
+    }
+
+    // Example: Penalize for late delivery
+    function penalizeLateDelivery(address participant) public onlyOwner {
+        penalizeParticipant(participant, 50); // Deduct 50 tokens for late delivery
+    }
+
+    // Events for transparency
+    event RewardIssued(address indexed participant, uint256 amount);
+    event PenaltyIssued(address indexed participant, uint256 amount);
 
     struct Manufacturer {
         string username;
@@ -35,15 +74,6 @@ contract PharmaChain {
 
     mapping(address => HospitalPharmacy) public hospitalpharmacies;
      address[] public hospitalpharmacyAccounts;
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
-        _;
-    }
-
-    constructor() {
-        owner = msg.sender;
-    }
 
     function registerManufacturer(string memory _username, address _account) public onlyOwner {
         manufacturers[_account] = Manufacturer(_username, _account);
@@ -108,6 +138,4 @@ contract PharmaChain {
      function getAllHospitalPharmacies() public view returns (address[] memory) {
         return hospitalpharmacyAccounts;
     }
-
-
 }

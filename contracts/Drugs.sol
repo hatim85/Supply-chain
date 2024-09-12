@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
+import "./PharmaChain.sol";
 
-contract PharmaDistribution {
+contract Drugs {
     struct Drug {
         string qrCode;
         string cryptoKey;
@@ -62,6 +63,8 @@ contract PharmaDistribution {
         uint256 reputationScore;
     }
 
+    PharmaChain public pc;
+
     mapping(string => Drug) public drugs;
     mapping(uint256 => Batch) public batches;
     // mapping(uint256 => Request) public requests;
@@ -99,6 +102,7 @@ contract PharmaDistribution {
     // Events
     event DrugCreated(string qrCode, address indexed manufacturer);
     event BatchCreated(uint256 batchId, address indexed owner);
+    event DrugOwnershipTransferred(string qrCode, address oldOwner, address newOwner);
     event BatchTransferred(
         uint256 batchId,
         address indexed from,
@@ -181,6 +185,7 @@ contract PharmaDistribution {
 
         // Record transaction
         recordTransaction(qrCode, address(0), msg.sender, "Manufactured");
+        pc.rewardParticipant(msg.sender,50);
     }
 
     // Function to create a batch of drugs
@@ -210,6 +215,7 @@ contract PharmaDistribution {
             createDrug(qrCodes[i], cryptoKeys[i], expirationDates[i]);
         }
         emit BatchCreated(batchId, msg.sender);
+        pc.rewardParticipant(msg.sender,100);
     }
 
     // Function for wholesaler to request drugs from manufacturer
@@ -237,6 +243,13 @@ contract PharmaDistribution {
             manufacturer
         );
         updateReputation(msg.sender, true);
+
+        // Reward for good reputation
+        Reputation memory rep = reputations[msg.sender];
+        if (rep.reputationScore > 80) {
+            // Example threshold: 80%
+            pc.rewardParticipant(msg.sender, 50); // Reward 50 tokens
+        }   
     }
 
     // Function for manufacturer to approve drug request
@@ -266,6 +279,9 @@ contract PharmaDistribution {
         emit RequestStatusChanged(requestId, "Approved");
         updateReputation(msg.sender, true);
         updateReputation(req.requester, true);
+
+        pc.rewardParticipant(msg.sender, 50);
+        pc.rewardParticipant(req.requester, 50);
     }
 
     function createTransferRequestToDistributor(
@@ -344,6 +360,9 @@ contract PharmaDistribution {
 
         updateReputation(msg.sender, true);
         updateReputation(request.requester, true);
+
+        pc.rewardParticipant(msg.sender, 50);
+        pc.rewardParticipant(request.requester, 50);
     }
 
     // Function for distributor to create a delivery request to wholesaler
@@ -423,6 +442,9 @@ contract PharmaDistribution {
 
         updateReputation(msg.sender, true);
         updateReputation(request.requester, true);
+
+        pc.rewardParticipant(msg.sender, 50);
+        pc.rewardParticipant(request.requester, 50);
     }
 
     // Function for hospital/pharmacy to request drugs from wholesaler
@@ -550,6 +572,9 @@ contract PharmaDistribution {
 
         updateReputation(request.requester, true);
         updateReputation(msg.sender, true);
+
+        pc.rewardParticipant(request.requester, 50);    //Reward wholeseller
+        pc.rewardParticipant(msg.sender, 50);   //Reward hospital
     }
 
     function createDeliveryRequestToHospital(
@@ -630,6 +655,9 @@ contract PharmaDistribution {
 
         updateReputation(msg.sender, true);
         updateReputation(request.requester, true);
+
+        pc.rewardParticipant(request.requester, 50);        //Reward distributor
+        pc.rewardParticipant(msg.sender, 50);   //Reward hospital/pharmacy
     }
 
     function updateIoTData(
@@ -646,10 +674,12 @@ contract PharmaDistribution {
         if (temperature < 2 || temperature > 8) {
             // Example temperature range: 2-8 Celsius
             emit Alert(qrCode, "Temperature out of range!", block.timestamp);
+            pc.penalizeParticipant(drugs[qrCode].currentOwner, 10);
         }
         if (humidity < 30 || humidity > 50) {
             // Example humidity range: 30-50%
             emit Alert(qrCode, "Humidity out of range!", block.timestamp);
+            pc.penalizeParticipant(drugs[qrCode].currentOwner, 10);
         }
     }
 
@@ -840,24 +870,27 @@ contract PharmaDistribution {
         );
         batch.status = "Revoked";
         emit BatchRevoked(batchId, msg.sender);
+
+        pc.penalizeParticipant(msg.sender, 50);
     }
 
     // update function drug
-    // function updateDrugStatus(string memory qrCode, string memory newStatus) public {
-    //     require(bytes(newStatus).length>0,"New status cannot be empty");
-    //     Drug storage drug=drugs[qrCode];
-    //     require(drug.currentOwner==msg.sender,"Only the current owner can update the drug status");
+    function updateDrugStatus(string memory qrCode, string memory newStatus) public {
+        require(bytes(newStatus).length>0,"New status cannot be empty");
+        Drug storage drug=drugs[qrCode];
+        require(drug.currentOwner==msg.sender,"Only the current owner can update the drug status");
 
-    //     drug.status=newStatus;
-    //     emit DrugStatusChanged(qrCode, newStatus, msg.sender);
-    // }
+        drug.status=newStatus;
+        emit DrugStatusChanged(qrCode, newStatus, msg.sender);
+    }
 
-    // function transferOwnership(string memory qrCode,address newOwner) public{
-    //     Drug storage drug=drugs[qrCode];
-    //     require(drug.currentOwner==msg.sender,"Only the current owner can transfer ownership");
-    //     require(newOwner!=address(0),"New owner cannot be zero");
 
-    //     drug.currentOwner=newOwner;
-    //     emit DrugOwnershipTransferred(qrCode,msg.sender,newOwner);
-    // }
+    function transferOwnership(string memory qrCode,address newOwner) public{
+        Drug storage drug=drugs[qrCode];
+        require(drug.currentOwner==msg.sender,"Only the current owner can transfer ownership");
+        require(newOwner!=address(0),"New owner cannot be zero");
+
+        drug.currentOwner=newOwner;
+        emit DrugOwnershipTransferred(qrCode,msg.sender,newOwner);
+    }
 }
