@@ -1,141 +1,107 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.26;
 
-import "./TokenRewards.sol";
+import './interfaces/IPharmaChain.sol';
+import './RewardPenalty.sol';
+import './library/Declarations.sol';
 
-contract PharmaChain {
-    TokenRewards public tokenContract;
+contract PharmaChain is IPharmaChain, RewardPenalty {
     address public owner;
 
-    constructor(TokenRewards _tokenContract){
-        tokenContract=_tokenContract;
-        owner=msg.sender;
+    // Constructor
+    constructor(address tokenContractAddress) RewardPenalty(tokenContractAddress) {
+        owner = msg.sender;
     }
 
+    // Modifier to restrict access to owner only
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can execute this");
+        require(msg.sender == owner, 'Only owner can execute this');
         _;
     }
 
-    // Function to reward participants for meeting performance metrics
-    function rewardParticipant(address participant, uint256 amount) public onlyOwner {
-        tokenContract.mint(participant, amount);
-        emit RewardIssued(participant, amount);
-    }
-
-    // Function to penalize participants for breaches
-    function penalizeParticipant(address participant, uint256 amount) public onlyOwner {
-        tokenContract.burn(participant, amount);
-        emit PenaltyIssued(participant, amount);
-    }
-
-    // Example: Reward for on-time delivery
-    function rewardOnTimeDelivery(address participant) public onlyOwner {
-        rewardParticipant(participant, 100); // Issue 100 tokens for on-time delivery
-    }
-
-    // Example: Penalize for late delivery
-    function penalizeLateDelivery(address participant) public onlyOwner {
-        penalizeParticipant(participant, 50); // Deduct 50 tokens for late delivery
-    }
-
-    // Events for transparency
-    event RewardIssued(address indexed participant, uint256 amount);
-    event PenaltyIssued(address indexed participant, uint256 amount);
-
-    struct Manufacturer {
-        string username;
-        address account;
-    }
-
-    mapping(address => Manufacturer) public manufacturers;
+    // Structs for different participants
+    mapping(address => Declarations.Manufacturer) public manufacturers;
     address[] public manufacturerAccounts;
 
-    struct Wholesaler {
-        string username;
-        address account;
-    }
+    mapping(address => Declarations.Wholesaler) public wholesalers;
+    address[] public wholesalerAccounts;
 
-    mapping(address => Wholesaler) public wholesalers;
-     address[] public wholesalerAccounts;
-
-    struct Distributor {
-        string username;
-        address account;
-    }
-
-    mapping(address => Distributor) public distributors;
+    mapping(address => Declarations.Distributor) public distributors;
     address[] public distributorAccounts;
 
-    struct HospitalPharmacy {
-        string username;
-        address account;
-    }
+    mapping(address => Declarations.Hospital) public hospitals;
+    address[] public hospitalAccounts;
 
-    mapping(address => HospitalPharmacy) public hospitalpharmacies;
-     address[] public hospitalpharmacyAccounts;
-
+    // Registration functions
     function registerManufacturer(string memory _username, address _account) public onlyOwner {
-        manufacturers[_account] = Manufacturer(_username, _account);
+        manufacturers[_account] = Declarations.Manufacturer(_username, _account);
         manufacturerAccounts.push(_account);
+        emit ManufacturerRegistered(_username, _account);
     }
 
-    function getManufacturer(address _account) public view returns (Manufacturer memory) {
-        Manufacturer memory manufacturer = manufacturers[_account];
-        require(manufacturer.account != address(0), "Manufacturer does not exist");
+    function registerWholesaler(string memory _username, address _account) public onlyOwner {
+        wholesalers[_account] = Declarations.Wholesaler(_username, _account);
+        wholesalerAccounts.push(_account);
+        emit WholesalerRegistered(_username, _account);
+    }
+
+    function registerDistributor(string memory _username, address _account) public onlyOwner {
+        distributors[_account] = Declarations.Distributor(_username, _account);
+        distributorAccounts.push(_account);
+        emit DistributorRegistered(_username, _account);
+    }
+
+    function registerHospital(string memory _username, address _account) public onlyOwner {
+        hospitals[_account] = Declarations.Hospital(_username, _account);
+        hospitalAccounts.push(_account);
+        emit HospitalRegistered(_username, _account);
+    }
+
+    // Getter functions
+    function getManufacturer(address _account) public view override returns (Declarations.Manufacturer memory) {
+        Declarations.Manufacturer memory manufacturer = manufacturers[_account];
+        require(manufacturer.account != address(0), 'Manufacturer does not exist');
         return manufacturer;
     }
 
-     function registerWholesaler(string memory _username, address _account) public onlyOwner {
-        wholesalers[_account] = Wholesaler(_username, _account);
-        wholesalerAccounts.push(_account);
-    }
-
-    function getWholesaler(address _account) public view returns (Wholesaler memory) {
-        Wholesaler memory wholesaler = wholesalers[_account];
-        require(wholesaler.account != address(0), "Wholesaler does not exist");
+    function getWholesaler(address _account) public view override returns (Declarations.Wholesaler memory) {
+        Declarations.Wholesaler memory wholesaler = wholesalers[_account];
+        require(wholesaler.account != address(0), 'Wholesaler does not exist');
         return wholesaler;
     }
 
-     function registerDistributor(string memory _username, address _account) public onlyOwner {
-        distributors[_account] = Distributor(_username, _account);
-        distributorAccounts.push(_account);
-    }
-
-    function getDistributor(address _account) public view returns (Distributor memory) {
-        Distributor memory distributor = distributors[_account];
-        require(distributor.account != address(0), "Distributor does not exist");
+    function getDistributor(address _account) public view override returns (Declarations.Distributor memory) {
+        Declarations.Distributor memory distributor = distributors[_account];
+        require(distributor.account != address(0), 'Distributor does not exist');
         return distributor;
     }
 
-     function registerHospitalPharmacy(string memory _username, address _account) public onlyOwner {
-        hospitalpharmacies[_account] = HospitalPharmacy(_username, _account);
-        hospitalpharmacyAccounts.push(_account);
+    function getHospital(address _account) public view override returns (Declarations.Hospital memory) {
+        Declarations.Hospital memory hospital = hospitals[_account];
+        require(hospital.account != address(0), 'Hospital does not exist');
+        return hospital;
     }
 
-    function getHospitalPharmacy(address _account) public view returns (HospitalPharmacy memory) {
-        HospitalPharmacy memory hospitalpharmacy = hospitalpharmacies[_account];
-        require(hospitalpharmacy.account != address(0), "Hospital/Pharmacy does not exist");
-        return hospitalpharmacy;
-    }
-
-
-     function getAllDistributors() public view returns (address[] memory) {
+    // Functions to get all participants
+    function getAllDistributors() public view override returns (address[] memory) {
         return distributorAccounts;
     }
 
-    
-     function getAllWholesalers() public view returns (address[] memory) {
+    function getAllWholesalers() public view override returns (address[] memory) {
         return wholesalerAccounts;
     }
 
-    
-     function getAllManufacturers() public view returns (address[] memory) {
+    function getAllManufacturers() public view override returns (address[] memory) {
         return manufacturerAccounts;
     }
 
-    
-     function getAllHospitalPharmacies() public view returns (address[] memory) {
-        return hospitalpharmacyAccounts;
+    function getAllHospital() public view override returns (address[] memory) {
+        return hospitalAccounts;
     }
+
+    // Events
+    event ManufacturerRegistered(string username, address account);
+    event WholesalerRegistered(string username, address account);
+    event DistributorRegistered(string username, address account);
+    event HospitalRegistered(string username, address account);
 }
