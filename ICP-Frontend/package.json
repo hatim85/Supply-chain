@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "pharmachain",
   "private": true,
   "version": "0.0.0",
@@ -30,27 +29,5 @@
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
     "vite": "^5.4.1"
-=======
-  "name": "supply-chain",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "^3.0.8",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "ethers": "^6.13.2",
-    "hardhat": "^2.22.10",
-    "prettier-plugin-solidity": "^1.4.1"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^5.0.2",
-    "dotenv": "^16.4.5"
->>>>>>> 11216ce448fae96fc008dda760cb446b82f5b1ed
-  }
+}
 }
