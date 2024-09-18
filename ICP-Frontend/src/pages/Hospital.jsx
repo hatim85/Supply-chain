@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Navbar, RequestTable, Button } from "../components";
-import Ethers from "../utils/Ethers";
+import Ethers from "../utils/Ethers"; // Import the Ethers utility
 
 const Hospital = () => {
   const [hospitalRequests, setHospitalRequests] = useState([]);
@@ -9,8 +9,10 @@ const Hospital = () => {
   const [wholesalerAddress, setWholesalerAddress] = useState("");
   const [requestId, setRequestId] = useState("");
 
-  const { contract: hospitalContract } = Ethers('hospital');
+  // Use useMemo to memoize the contract and prevent unnecessary re-initialization
+  const hospitalContract = useMemo(() => Ethers("hospital").contract, []);
 
+  // Fetch hospital requests once the contract is initialized
   useEffect(() => {
     if (hospitalContract) {
       fetchHospitalRequests();
@@ -30,6 +32,7 @@ const Hospital = () => {
     try {
       await hospitalContract.requestDrugsFromWholesaler(drugName, quantity, wholesalerAddress);
       alert("Drug request sent!");
+      fetchHospitalRequests(); // Refresh the list after sending the request
     } catch (error) {
       console.error("Failed to request drugs from wholesaler:", error);
     }
@@ -75,14 +78,18 @@ const Hospital = () => {
           <span className="text-white font-semibold">Total Hospital Requests</span>
         </div>
         <div className="w-full">
-          <RequestTable headers={headers} requestHistory={hospitalRequests.map(req => [
-            { id: req.requestId.toString() },
-            { name: req.drugName },
-            { quantity: req.quantity.toString() },
-            { requester: req.requester },
-            { status: req.status },
-          ])} />
+          <RequestTable
+            headers={headers}
+            requestHistory={hospitalRequests.map(req => [
+              { id: req.requestId.toString() },
+              { name: req.drugName },
+              { quantity: req.quantity.toString() },
+              { requester: req.requester },
+              { status: req.status },
+            ])}
+          />
         </div>
+
         <div className="flex flex-col justify-center items-center gap-2 px-2">
           <span className="text-white font-semibold text-[30px]">Request Drugs from Wholesaler</span>
           <form className="flex flex-col justify-center items-center w-full gap-6" onSubmit={(e) => {

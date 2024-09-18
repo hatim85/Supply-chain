@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Navbar, RequestTable, Button } from "../components";
-import Ethers from "../utils/Ethers"; // Import the Ethers utility
+import Ethers from "../utils/Ethers";
 
 const Distributor = () => {
   const [distributorRequests, setDistributorRequests] = useState([]);
@@ -9,7 +9,8 @@ const Distributor = () => {
   const [wholesalerAddress, setWholesalerAddress] = useState("");
   const [hospitalAddress, setHospitalAddress] = useState("");
 
-  const { contract: distributorContract } = Ethers('distributor');
+  // Use useMemo to memoize the contract so it's not re-initialized unnecessarily
+  const distributorContract = useMemo(() => Ethers("distributor").contract, []);
 
   useEffect(() => {
     if (distributorContract) {
@@ -75,9 +76,7 @@ const Distributor = () => {
           />
         </div>
         <div className="flex flex-col justify-center items-center gap-2 px-2">
-          <span className="text-white font-semibold text-[30px]">
-            Accept Transfer Requests from Manufacturer
-          </span>
+          <span className="text-white font-semibold text-[30px]">Accept Transfer Requests from Manufacturer</span>
           <form className="flex flex-col justify-center items-center w-full gap-6" onSubmit={(e) => {
             e.preventDefault();
             handleAcceptRequest();
