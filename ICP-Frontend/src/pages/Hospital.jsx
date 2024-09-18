@@ -1,7 +1,60 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar, RequestTable, Button } from "../components";
+import Ethers from "../utils/Ethers";
 
 const Hospital = () => {
+  const [hospitalRequests, setHospitalRequests] = useState([]);
+  const [drugName, setDrugName] = useState("");
+  const [quantity, setQuantity] = useState(0);
+  const [wholesalerAddress, setWholesalerAddress] = useState("");
+  const [requestId, setRequestId] = useState("");
+
+  const { contract: hospitalContract } = Ethers('hospital');
+
+  useEffect(() => {
+    if (hospitalContract) {
+      fetchHospitalRequests();
+    }
+  }, [hospitalContract]);
+
+  const fetchHospitalRequests = async () => {
+    try {
+      const requests = await hospitalContract.getAllRequests2();
+      setHospitalRequests(requests);
+    } catch (error) {
+      console.error("Failed to fetch hospital requests:", error);
+    }
+  };
+
+  const handleRequestDrugs = async () => {
+    try {
+      await hospitalContract.requestDrugsFromWholesaler(drugName, quantity, wholesalerAddress);
+      alert("Drug request sent!");
+    } catch (error) {
+      console.error("Failed to request drugs from wholesaler:", error);
+    }
+  };
+
+  const handleAcceptDeliveryRequestFromDistributor = async () => {
+    try {
+      await hospitalContract.acceptDeliveryRequestFromDistributor2(requestId);
+      alert("Delivery request from distributor accepted!");
+      fetchHospitalRequests(); // Refresh the list of requests
+    } catch (error) {
+      console.error("Failed to accept delivery request from distributor:", error);
+    }
+  };
+
+  const handleAcceptDeliveryRequestFromWholesaler = async () => {
+    try {
+      await hospitalContract.acceptDeliveryRequestFromWholesaler(requestId);
+      alert("Delivery request from wholesaler accepted!");
+      fetchHospitalRequests(); // Refresh the list of requests
+    } catch (error) {
+      console.error("Failed to accept delivery request from wholesaler:", error);
+    }
+  };
+
   const headers = [
     "Request Id",
     "Drug Name",
@@ -9,119 +62,110 @@ const Hospital = () => {
     "Requester",
     "Status",
   ];
-  const requestHistory = [
-    [
-      { id: 0 },
-      { name: "Dolo" },
-      { quantity: 100 },
-      { requester: "address" },
-      { status: "Pending" },
-    ],
-  ];
+
   return (
     <div>
       <Navbar />
       <div className="flex flex-col py-8 gap-10 px-2 justify-center items-center text-center">
         <div
           className="border rounded-2xl border-gray-600 flex flex-col w-[50%] 
-         justify-center items-center py-4 bg-[#404040]
-        "
+         justify-center items-center py-4 bg-[#404040]"
         >
-          <span className="text-[44px] text-gray-50 ">10</span>
-          <span className="text-white font-semibold">
-            Total Hospital Requests
-          </span>
+          <span className="text-[44px] text-gray-50 ">{hospitalRequests.length}</span>
+          <span className="text-white font-semibold">Total Hospital Requests</span>
         </div>
         <div className="w-full">
-          <RequestTable headers={headers} requestHistory={requestHistory} />
+          <RequestTable headers={headers} requestHistory={hospitalRequests.map(req => [
+            { id: req.requestId.toString() },
+            { name: req.drugName },
+            { quantity: req.quantity.toString() },
+            { requester: req.requester },
+            { status: req.status },
+          ])} />
         </div>
         <div className="flex flex-col justify-center items-center gap-2 px-2">
-          <span className="text-white font-semibold text-[30px]  ">
-            Request Drugs from Wholesaler
-          </span>
-          <form className="flex flex-col justify-center items-center w-full gap-6">
-          <div className="flex gap-2 justify-center items-center">
-              <label htmlFor="quant" className="text-white font-mono">
-                Enter Drug Name :
-              </label>
+          <span className="text-white font-semibold text-[30px]">Request Drugs from Wholesaler</span>
+          <form className="flex flex-col justify-center items-center w-full gap-6" onSubmit={(e) => {
+            e.preventDefault();
+            handleRequestDrugs();
+          }}>
+            <div className="flex gap-2 justify-center items-center">
+              <label htmlFor="drug_name" className="text-white font-mono">Enter Drug Name :</label>
               <input
                 type="text"
-                name="quant"
-                id="quant"
+                id="drug_name"
                 className="rounded-md p-1 outline-none"
+                value={drugName}
+                onChange={(e) => setDrugName(e.target.value)}
               />
             </div>
             <div className="flex gap-2 justify-center items-center">
-              <label htmlFor="quant" className="text-white font-mono">
-                Enter Quantity :
-              </label>
+              <label htmlFor="quantity" className="text-white font-mono">Enter Quantity :</label>
               <input
                 type="number"
                 min={0}
-                name="quant"
-                id="quant"
+                id="quantity"
                 className="rounded-md p-1 outline-none"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
               />
             </div>
             <div className="flex gap-2 justify-center items-center">
-              <label htmlFor="quant" className="text-white font-mono">
-                Enter Wholesaler Address :
-              </label>
+              <label htmlFor="wholesaler_address" className="text-white font-mono">Enter Wholesaler Address :</label>
               <input
                 type="text"
-                name="quant"
-                id="quant"
+                id="wholesaler_address"
                 className="rounded-md p-1 outline-none"
+                value={wholesalerAddress}
+                onChange={(e) => setWholesalerAddress(e.target.value)}
               />
             </div>
-            <button>
+            <button type="submit">
               <Button title={"Send Request"} style={"bg-blue-300"} />
             </button>
           </form>
         </div>
 
         <div className="flex flex-col pt-8 gap-4 justify-center items-center">
-          <span className="text-white font-semibold text-[30px] ">
-            Accept Delivery Request from WholeSaler
-          </span>
-          <form className="flex flex-col justify-center items-center w-full gap-6">
+          <span className="text-white font-semibold text-[30px]">Accept Delivery Request from Distributor</span>
+          <form className="flex flex-col justify-center items-center w-full gap-6" onSubmit={(e) => {
+            e.preventDefault();
+            handleAcceptDeliveryRequestFromDistributor();
+          }}>
             <div className="flex gap-2 justify-center items-center">
-              <label htmlFor="request_id" className="text-white font-mono ">
-                Enter request ID :
-              </label>
+              <label htmlFor="request_id_distributor" className="text-white font-mono">Enter Request ID :</label>
               <input
                 type="number"
-                min={0}
-                name="request_id"
-                id="request_id"
+                id="request_id_distributor"
                 className="rounded-md p-1 outline-none"
+                value={requestId}
+                onChange={(e) => setRequestId(e.target.value)}
               />
             </div>
-            <button>
-              <Button title={"Create Request"} style={"bg-green-300"} />
+            <button type="submit">
+              <Button title={"Accept Request"} style={"bg-green-300"} />
             </button>
           </form>
         </div>
 
         <div className="flex flex-col pt-8 gap-4 justify-center items-center">
-          <span className="text-white font-semibold text-[30px] ">
-            Accept Delivery Request from Distributor
-          </span>
-          <form className="flex flex-col justify-center items-center w-full gap-6">
+          <span className="text-white font-semibold text-[30px]">Accept Delivery Request from Wholesaler</span>
+          <form className="flex flex-col justify-center items-center w-full gap-6" onSubmit={(e) => {
+            e.preventDefault();
+            handleAcceptDeliveryRequestFromWholesaler();
+          }}>
             <div className="flex gap-2 justify-center items-center">
-              <label htmlFor="request_id" className="text-white font-mono ">
-                Enter request ID :
-              </label>
+              <label htmlFor="request_id_wholesaler" className="text-white font-mono">Enter Request ID :</label>
               <input
                 type="number"
-                min={0}
-                name="request_id"
-                id="request_id"
+                id="request_id_wholesaler"
                 className="rounded-md p-1 outline-none"
+                value={requestId}
+                onChange={(e) => setRequestId(e.target.value)}
               />
             </div>
-            <button>
-              <Button title={"Create Request"} style={"bg-yellow-400"} />
+            <button type="submit">
+              <Button title={"Accept Request"} style={"bg-yellow-400"} />
             </button>
           </form>
         </div>

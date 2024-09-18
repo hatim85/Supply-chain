@@ -32,13 +32,13 @@ const RequestTable = ({ headers, requestHistory }) => {
                 </tr>
               ))}
             {requestHistory.length < 1 && (
-              <div class="flex flex-col items-center my-5 ">
+              <div className="flex flex-col items-center my-5 ">
                 <img
                   src="https://topmate.io/_next/image?url=%2Fimages%2Fdashboard%2Ftestimonials%2FTestimonialEmpty.svg&w=256&q=75"
-                  class="w-[100px]"
+                  className="w-[100px]"
                   alt=""
                 />
-                <p class="text-[16px] mt-2 text-[#ffffff] font-[600]">
+                <p className="text-[16px] mt-2 text-[#ffffff] font-[600]">
                   No Data
                 </p>
               </div>

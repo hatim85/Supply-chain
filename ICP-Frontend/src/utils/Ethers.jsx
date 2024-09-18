@@ -9,6 +9,7 @@ function Ethers(contractKey) {
         return {};
     }
 
+    console.log("arrived at ethers")
     // Get the provider and signer from MetaMask
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
@@ -22,6 +23,7 @@ function Ethers(contractKey) {
     const contractAddress = CONTRACT_ADDRESSES[contractKey];
     const contractABI = CONTRACT_ABIS[contractKey];
 
+    console.log(contractAddress)
     // Check if the contract key exists in the config
     if (!contractAddress || !contractABI) {
         console.error("Invalid contract key or contract details not found in config");

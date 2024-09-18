@@ -59,26 +59,6 @@ contract Hospital {
         pc.rewardParticipant(msg.sender, 50);
     }
 
-    // Function for Hospital/Pharmacy to create a delivery request to a distributor
-    function createDeliveryRequestToDistributor(uint256 batchId, address distributor) public {
-        Declarations.Batch storage batch = batches[batchId]; // Batch from Declarations.sol
-        require(batch.owner == msg.sender, 'Only the owner can create a delivery request');
-
-        uint256 requestId = distributorRequestCounters[distributor]++;
-        distributorRequests[requestId] = Declarations.TransferRequest(
-            requestId,
-            batchId,
-            msg.sender,
-            distributor,
-            'Pending'
-        );
-
-        emit Declarations.DeliveryRequestCreated(requestId, batchId, msg.sender, distributor, 'Pending');
-
-        // Update reputation of the sender
-        pc.updateReputation(msg.sender, true);
-    }
-
     // Function for hospital/pharmacy to request drugs from wholesaler
     function requestDrugsFromWholesaler(string memory drugName, uint256 quantity, address wholesaler) public {
         uint256 requestId = hospitalRequesttoWholesalerCounters[wholesaler]++;

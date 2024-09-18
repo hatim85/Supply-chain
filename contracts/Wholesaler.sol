@@ -26,6 +26,39 @@ contract Wholesaler is IWholesaler {
         rewardPenaltyContract = IRewardPenalty(rewardPenaltyAddress);
     }
 
+    // Approve request from hospital
+    function approveRequestFromHospital(uint256 requestId, uint256 batchId) public override {
+        Declarations.Request1 storage req = requests1[requestId]; // Use correct mapping
+        require(req.requester == msg.sender, 'Only the requester can approve this request'); // Updated the condition
+        require(keccak256(bytes(req.status)) == keccak256(bytes('Pending')), 'Request not pending');
+        req.status = 'Approved';
+
+        batches[batchId].status = 'Final'; // Use correct batch mapping
+        emit Declarations.RequestStatusChanged(requestId, 'Approved');
+
+        rewardPenaltyContract.updateReputation(msg.sender, true);
+    }
+
+    // Function for Hospital/Pharmacy to create a delivery request to a distributor
+    function createDeliveryRequestToDistributor(uint256 batchId, address distributor) public {
+        Declarations.Batch storage batch = batches[batchId]; // Batch from Declarations.sol
+        require(batch.owner == msg.sender, 'Only the owner can create a delivery request');
+
+        uint256 requestId = distributorRequestCounter++;
+        distributorRequests[requestId] = Declarations.TransferRequest(
+            requestId,
+            batchId,
+            msg.sender,
+            distributor,
+            'Pending'
+        );
+
+        emit Declarations.DeliveryRequestCreated(requestId, batchId, msg.sender, distributor, 'Pending');
+
+        // Update reputation of the sender
+        rewardPenaltyContract.updateReputation(msg.sender, true);
+    }
+
     function acceptDeliveryRequestFromDistributor1(uint256 requestId) public override {
         Declarations.TransferRequest storage request = wholesalerRequests[requestId];
         require(request.recipient == msg.sender, 'Only the recipient can accept the request');
@@ -78,12 +111,10 @@ contract Wholesaler is IWholesaler {
     // Function for Wholesaler to get all contents of distributorRequests mapping
     function getAllDistributorRequests() public view override returns (Declarations.TransferRequest[] memory) {
         uint256 count = 0;
-        for (uint256 i = 0; i < type(uint256).max; i++) {
+        for (uint256 i = 0; i < distributorRequestCounter; i++) { // Updated loop condition
             if (distributorRequests[i].requester != address(0)) {
                 // Ensure requester is address
                 count++;
-            } else {
-                break;
             }
         }
 
@@ -97,12 +128,10 @@ contract Wholesaler is IWholesaler {
     // Function to get all contents of requests1 mapping
     function getAllRequests1() public view override returns (Declarations.Request1[] memory) {
         uint256 count = 0;
-        for (uint256 i = 0; i < type(uint256).max; i++) {
+        for (uint256 i = 0; i < wholesalerRequesttoManufacturerCounters[address(0)]; i++) { // Updated loop condition
             if (requests1[i].requester != address(0)) {
                 // Ensure requester is address
                 count++;
-            } else {
-                break;
             }
         }
 
@@ -111,25 +140,5 @@ contract Wholesaler is IWholesaler {
             allRequests1[i] = requests1[i];
         }
         return allRequests1;
-    }
-
-    // Function for Wholesaler to create a transfer request to distributor
-    function createTransferRequestToDistributor(uint256 batchId, address distributor) public override {
-        Declarations.Batch storage batch = batches[batchId];
-        require(batch.owner == msg.sender, 'Only the owner can create a transfer request');
-
-        uint256 requestId = distributorRequestCounter++;
-        distributorRequests[requestId] = Declarations.TransferRequest(
-            requestId,
-            batchId,
-            msg.sender,
-            distributor,
-            'Pending'
-        );
-
-        emit Declarations.TransferRequestCreated(requestId, batchId, msg.sender, distributor, 'Pending');
-
-        // Update reputation through IRewardPenalty interface
-        rewardPenaltyContract.updateReputation(msg.sender, true);
     }
 }

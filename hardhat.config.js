@@ -11,13 +11,11 @@ module.exports = {
       },
     },
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
-  },
   networks: {
     icp: {
       url: "https://testnet.bitfinity.network",
       accounts: [process.env.PRIVATE_KEY],
+      chainId: 355113,
       gasPrice: 1000000000
     },
     localhost: {

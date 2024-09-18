@@ -26,26 +26,11 @@ contract Distributor is IDistributor {
     mapping(address => uint256) private hospitalRequesttoWholesalerCounters;
 
     // External contract references
-    IBatch public batchContract;
     IRewardPenalty public rewardPenaltyContract;
 
     // Constructor
-    constructor(address _batchContract, address _rewardPenaltyContract) {
-        batchContract = IBatch(_batchContract);
+    constructor(address _rewardPenaltyContract) {
         rewardPenaltyContract = IRewardPenalty(_rewardPenaltyContract);
-    }
-
-    // Approve request from hospital
-    function approveRequestFromHospital(uint256 requestId, uint256 batchId) public override {
-        Declarations.Request2 storage req = requests2[requestId];
-        require(req.wholesaler == msg.sender, 'Only the wholesaler can approve this request');
-        require(keccak256(bytes(req.status)) == keccak256(bytes('Pending')), 'Request not pending');
-        req.status = 'Approved';
-
-        batchContract.changeFinalStat(batchId, req.requester);
-        emit Declarations.RequestStatusChanged(requestId, 'Approved');
-
-        rewardPenaltyContract.updateReputation(msg.sender, true);
     }
 
     // Accept transfer request from manufacturer
